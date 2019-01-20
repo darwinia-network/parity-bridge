@@ -4,6 +4,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
+// another one is ByzantineSimpleSwapBridge.
 contract AtlantisSimpleSwapBridge is Ownable {
     using SafeMath for uint256;
 
@@ -74,7 +75,7 @@ contract AtlantisSimpleSwapBridge is Ownable {
         require(swapAmount > 0, "Swap amount must be larger than zero.");
 
         uint256 requiredFee = querySwapFeeForNow(swapAmount);
-        require(_amount >= swapAmount + requiredFee, "No enough of token amount are approved.");
+        require(_amount >= swapAmount.add(requiredFee), "No enough of token amount are approved.");
 
         if(requiredFee > 0) {
             require(ERC20(_token).transferFrom(from, feeWallet, requiredFee), "Fee transfer failed.");
@@ -124,11 +125,11 @@ contract AtlantisSimpleSwapBridge is Ownable {
     }
 
     function querySwapFee(uint256 _amount, uint256 _time) public view returns (uint256) {
-        if (startTime == 0 || _time > (startTime + transitionDuration)) {
+        if (startTime == 0 || _time >= (startTime + transitionDuration)) {
             return minFee;
         }
 
-        uint256 requiredFee = transitionRatio.mul(_amount).mul(startTime + transitionDuration - _time).div(transitionDuration * 100000);
+        uint256 requiredFee = transitionRatio.mul(_amount).mul(startTime.add(transitionDuration).sub(_time)).div(transitionDuration * 100000);
 
         if (requiredFee < minFee ){
             requiredFee = minFee;
