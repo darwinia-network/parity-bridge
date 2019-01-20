@@ -19,6 +19,8 @@
 # truffle stuff
 truffle/build
 
+swap/build
+
 node_modules
 
 compiled_contracts
