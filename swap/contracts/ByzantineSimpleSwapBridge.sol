@@ -20,7 +20,7 @@ contract ByzantineSimpleSwapBridge is Ownable {
 
     uint256 public minFee;
 
-    uint256 public transitionRatio;    // default to 5000, denominator is 100000
+    uint256 public transitionRatio;    // default to 5000, denominator is 10000
     uint256 public transitionDuration;  // default to 6 hours
 
     /// Event created on initilizing token dex in source network.
@@ -129,7 +129,7 @@ contract ByzantineSimpleSwapBridge is Ownable {
             return minFee;
         }
 
-        uint256 requiredFee = transitionRatio.mul(_amount).mul(startTime.add(transitionDuration).sub(_time)).div(transitionDuration * 100000);
+        uint256 requiredFee = transitionRatio.mul(_amount).mul(startTime.add(transitionDuration).sub(_time)).div(transitionDuration * 10000);
 
         if (requiredFee < minFee ){
             requiredFee = minFee;
