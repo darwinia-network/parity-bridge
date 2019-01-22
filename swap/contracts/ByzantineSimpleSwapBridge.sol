@@ -20,6 +20,8 @@ contract ByzantineSimpleSwapBridge is Ownable {
 
     uint256 public minFee;
 
+    uint256 public feeRatio;    // default to 100, denominator is 10000
+
     uint256 public transitionRatio;    // default to 5000, denominator is 10000
     uint256 public transitionDuration;  // default to 6 hours
 
@@ -47,6 +49,8 @@ contract ByzantineSimpleSwapBridge is Ownable {
         startTime = _startTime;
         
         transitionDuration = 6*3600;
+
+        feeRatio = 100;
     }
 
     //users initial the exchange token with token method of "approveAndCall" in the source chain network
@@ -112,6 +116,10 @@ contract ByzantineSimpleSwapBridge is Ownable {
         minFee = _minFee;
     }
 
+    function changeFeeRatio(uint256 _feeRatio) public onlyOwner {
+        feeRatio = _feeRatio;
+    }
+
     function changeTransitionRatio(uint256 _transitionRatio) public onlyOwner {
         transitionRatio = _transitionRatio;
     }
@@ -125,13 +133,18 @@ contract ByzantineSimpleSwapBridge is Ownable {
     }
 
     function querySwapFee(uint256 _amount, uint256 _time) public view returns (uint256) {
+        uint256 requiredFee = feeRatio.mul(_amount).div(10000);
+
         if (startTime == 0 || _time >= (startTime + transitionDuration)) {
-            return minFee;
+            // do nothing.
+        } else {
+            uint256 transitionFee = transitionRatio.mul(_amount).mul(startTime.add(transitionDuration).sub(_time)).div(transitionDuration * 10000);
+            if (requiredFee < transitionFee) {
+                requiredFee = transitionFee;
+            }
         }
 
-        uint256 requiredFee = transitionRatio.mul(_amount).mul(startTime.add(transitionDuration).sub(_time)).div(transitionDuration * 10000);
-
-        if (requiredFee < minFee ){
+        if (requiredFee < minFee ) {
             requiredFee = minFee;
         }
 
