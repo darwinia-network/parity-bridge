@@ -13,11 +13,7 @@ contract AtlantisSimpleSwapBridge is Ownable, Pausable {
 
     uint256 public swapCount;
 
-    uint256 public maxSwapAmount;
-
     address public feeWallet;
-
-    uint256 public minFee;
 
     uint256 public feeRatio;    // default to 100, denominator is 10000
 
@@ -31,14 +27,10 @@ contract AtlantisSimpleSwapBridge is Ownable, Pausable {
     /// Constructor.
     constructor (
         address _feeWallet,
-        uint256 _minFee,
-        uint256 _maxSwapAmount,
         uint256 _feeRatio
     ) public
     {
         feeWallet = _feeWallet;
-        minFee = _minFee;
-        maxSwapAmount = _maxSwapAmount;
         feeRatio = _feeRatio;
     }
 
@@ -65,7 +57,6 @@ contract AtlantisSimpleSwapBridge is Ownable, Pausable {
             receiver :=  mload(add(ptr, 228))
         }
 
-        require(swapAmount <= maxSwapAmount, "Swap amount must be less than max swap amount.");
         require(swapAmount > 0, "Swap amount must be larger than zero.");
 
         uint256 requiredFee = querySwapFee(swapAmount);
@@ -90,16 +81,8 @@ contract AtlantisSimpleSwapBridge is Ownable, Pausable {
         supportedTokens[_token] = false;
     }
 
-    function changeMaxSwapAmount(uint256 _maxSwapAmount) public onlyOwner {
-        maxSwapAmount = _maxSwapAmount;
-    }
-
     function changeFeeWallet(address _newFeeWallet) public onlyOwner {
         feeWallet = _newFeeWallet;
-    }
-
-    function changeMinFee(uint256 _minFee) public onlyOwner {
-        minFee = _minFee;
     }
 
     function changeFeeRatio(uint256 _feeRatio) public onlyOwner {
@@ -108,9 +91,6 @@ contract AtlantisSimpleSwapBridge is Ownable, Pausable {
 
     function querySwapFee(uint256 _amount) public view returns (uint256) {
         uint256 requiredFee = feeRatio.mul(_amount).div(10000);
-        if (requiredFee < minFee) {
-            requiredFee = minFee;
-        }
 
         return requiredFee;
     }
