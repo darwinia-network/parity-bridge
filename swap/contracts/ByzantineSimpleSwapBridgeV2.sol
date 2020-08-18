@@ -13,8 +13,6 @@ contract ByzantineSimpleSwapBridge is Ownable, Pausable {
 
     uint256 public swapCount;
 
-    uint256 public startTime;
-
     uint256 public maxSwapAmount;
 
     address public feeWallet;
@@ -22,9 +20,6 @@ contract ByzantineSimpleSwapBridge is Ownable, Pausable {
     uint256 public minFee;
 
     uint256 public feeRatio;    // default to 100, denominator is 10000
-
-    uint256 public transitionRatio;    // default to 5000, denominator is 10000
-    uint256 public transitionDuration;  // default to 6 hours
 
     /// Event created on initilizing token dex in source network.
     event TokenSwapped(
@@ -37,21 +32,14 @@ contract ByzantineSimpleSwapBridge is Ownable, Pausable {
     constructor (
         address _feeWallet,
         uint256 _minFee,
-        uint256 _transitionRatio,
         uint256 _maxSwapAmount,
-        uint256 _startTime
+        uint256 _feeRatio
     ) public
     {
         feeWallet = _feeWallet;
         minFee = _minFee;
-        transitionRatio = _transitionRatio;
         maxSwapAmount = _maxSwapAmount;
-
-        startTime = _startTime;
-        
-        transitionDuration = 6*3600;
-
-        feeRatio = 100;
+        feeRatio = _feeRatio;
     }
 
     //users initial the exchange token with token method of "approveAndCall" in the source chain network
@@ -74,12 +62,10 @@ contract ByzantineSimpleSwapBridge is Ownable, Pausable {
             receipt :=  mload(add(ptr, 228))
         }
 
-        require(startTime == 0 || now >= startTime, "Swap should be after the start time.");
-
         require(swapAmount <= maxSwapAmount, "Swap amount must be less than max swap amount.");
         require(swapAmount > 0, "Swap amount must be larger than zero.");
 
-        uint256 requiredFee = querySwapFeeForNow(swapAmount);
+        uint256 requiredFee = querySwapFee(swapAmount);
         require(_amount >= swapAmount.add(requiredFee), "No enough of token amount are approved.");
 
         if(requiredFee > 0) {
@@ -101,10 +87,6 @@ contract ByzantineSimpleSwapBridge is Ownable, Pausable {
         supportedTokens[_token] = false;
     }
 
-    function changeStartTime(uint256 _startTime) public onlyOwner {
-        startTime = _startTime;
-    }
-
     function changeMaxSwapAmount(uint256 _maxSwapAmount) public onlyOwner {
         maxSwapAmount = _maxSwapAmount;
     }
@@ -121,34 +103,11 @@ contract ByzantineSimpleSwapBridge is Ownable, Pausable {
         feeRatio = _feeRatio;
     }
 
-    function changeTransitionRatio(uint256 _transitionRatio) public onlyOwner {
-        transitionRatio = _transitionRatio;
-    }
-
-    function changeTransitionDuration(uint256 _transitionDuration) public onlyOwner {
-        transitionDuration = _transitionDuration;
-    }
-
-    function querySwapFeeForNow(uint256 _amount) public view returns (uint256) {
-        return querySwapFee(_amount, now);
-    }
-
-    function querySwapFee(uint256 _amount, uint256 _time) public view returns (uint256) {
+    function querySwapFee(uint256 _amount) public view returns (uint256) {
         uint256 requiredFee = feeRatio.mul(_amount).div(10000);
-
-        if (startTime == 0 || _time >= (startTime + transitionDuration)) {
-            // do nothing.
-        } else {
-            uint256 transitionFee = transitionRatio.mul(_amount).mul(startTime.add(transitionDuration).sub(_time)).div(transitionDuration * 10000);
-            if (requiredFee < transitionFee) {
-                requiredFee = transitionFee;
-            }
-        }
-
         if (requiredFee < minFee ) {
             requiredFee = minFee;
         }
-
         return requiredFee;
     }
 
