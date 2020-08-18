@@ -52,14 +52,17 @@ contract ByzantineSimpleSwapBridge is Ownable, Pausable {
 
         uint256 swapAmount;
         uint256 dstNetwork;
-        bytes32 receipt;
+        bytes32 receiver;
 
+        // swapAmount - token amount
+        // dstNetwork -  1:Atlantis 2: Byzantine
+        // receiver - receiver address of target network
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, 0, calldatasize)
             swapAmount := mload(add(ptr, 164))
             dstNetwork := mload(add(ptr, 196))
-            receipt :=  mload(add(ptr, 228))
+            receiver :=  mload(add(ptr, 228))
         }
 
         require(swapAmount <= maxSwapAmount, "Swap amount must be less than max swap amount.");
@@ -74,7 +77,7 @@ contract ByzantineSimpleSwapBridge is Ownable, Pausable {
 
         require(ERC20(_token).transferFrom(from, this, swapAmount), "Swap amount transfer failed.");
 
-        emit TokenSwapped(swapCount, from, receipt, swapAmount, _token, requiredFee, 200000, dstNetwork);
+        emit TokenSwapped(swapCount, from, receiver, swapAmount, _token, requiredFee, 200000, dstNetwork);
         
         swapCount = swapCount + 1;
     }
